@@ -5,7 +5,7 @@ import http from 'http';
 import dotenv from 'dotenv';
 
 import userRouter from "./routes/users.routes.js";
-
+import chatRouter from "./routes/messages.routes.js";
 
 dotenv.config();
 
@@ -30,7 +30,7 @@ if (!fs.existsSync('uploads')){
 app.use('/uploads', express.static('uploads'));
 
 app.use("/users",userRouter); 
-// app.use("/chat",chatRouter);
+app.use("/chat",chatRouter);
 
 //----------Default route-----
 app.use("/",(req,res)=>{
