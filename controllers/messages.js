@@ -32,11 +32,36 @@ export const createMessage = async (req, res) => {
 
 export const getMessages = async (req, res) => {
   try {
-   const sender_id = req.user?.user_id; // From auth middleware
+    const sender_id = req.user?.user_id; // From auth middleware
     const { receiver_id } = req.body;
-    
+
     if (!receiver_id) {
-      return res.status(400).json({ success: false, message: "Receiver ID is required" });
+      // Fetch list of conversations for the Home screen
+      const [conversations] = await pool.query(
+        `SELECT 
+          u.user_id as id,
+          u.name,
+          u.profile_image as image,
+          u.is_online as online,
+          m.message,
+          m.created_at as time,
+          (SELECT COUNT(*) FROM messages m2 WHERE m2.sender_id = u.user_id AND m2.receiver_id = ? AND m2.is_read = 0) as unread
+        FROM messages m
+        JOIN users u ON (m.sender_id = u.user_id AND m.receiver_id = ?) OR (m.sender_id = ? AND m.receiver_id = u.user_id)
+        WHERE m.message_id IN (
+          SELECT MAX(message_id)
+          FROM messages
+          WHERE sender_id = ? OR receiver_id = ?
+          GROUP BY CASE WHEN sender_id = ? THEN receiver_id ELSE sender_id END
+        )
+        ORDER BY m.created_at DESC`,
+        [sender_id, sender_id, sender_id, sender_id, sender_id, sender_id]
+      );
+
+      return res.status(200).json({
+        success: true,
+        messages: conversations,
+      });
     }
 
     const [messages] = await pool.query(
@@ -66,10 +91,10 @@ export const deleteMessage = async (req, res) => {
       return res.status(404).json({ success: false, message: "Message not found or you don't have permission to delete it" });
     }
     res.status(200).json({ success: true, message: "Message deleted successfully" });
-    } catch (error) {
+  } catch (error) {
     console.error("Error in deleteMessage:", error);
     res.status(500).json({ success: false, message: "Server error" });
-  } 
+  }
 }
 
 export const isSeen = async (req, res) => {
