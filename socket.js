@@ -18,15 +18,15 @@ export const initSocket = (server) => {
 
     socket.on("authenticate", async (token) => {
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SCRETE || "");
-        currentUserId = decoded.user_id;
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || "");
+        currentUserId = Number(decoded.user_id);
 
         userSockets.set(currentUserId, socket.id);
-        console.log(`User ${currentUserId} authenticated`); // ---------dev log for socket id---
+        console.log(`User ${currentUserId} authenticated`);
 
         // update online status in user table
         await pool.execute(
-          "UPDATE users SET is_ofline = 'online', last_seen = NOW() WHERE user_id = ?",
+          "UPDATE users SET is_online = 'online', last_seen = NOW() WHERE user_id = ?",
           [currentUserId],
         );
 

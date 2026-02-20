@@ -1,4 +1,5 @@
 import pool from "../db.js";
+import { getIO, getUserSocket } from "../socket.js";
 
 export const sendFriendRequest = async (req, res) => {
     try {
@@ -10,14 +11,14 @@ export const sendFriendRequest = async (req, res) => {
         }
 
         // Find receiver
-        const [users] = await pool.query("SELECT user_id FROM users WHERE username = ?", [receiver_username]);
+        const [users] = await pool.query("SELECT user_id, name, username, profile_image FROM users WHERE username = ?", [receiver_username]);
         if (users.length === 0) {
             return res.status(404).json({ success: false, message: "User not found" });
         }
 
         const receiver_id = users[0].user_id;
 
-        if (sender_id === receiver_id) {
+        if (Number(sender_id) === Number(receiver_id)) {
             return res.status(400).json({ success: false, message: "You cannot send a request to yourself" });
         }
 
@@ -31,10 +32,26 @@ export const sendFriendRequest = async (req, res) => {
             return res.status(400).json({ success: false, message: "Friend request already pending or you are already friends" });
         }
 
-        await pool.query(
+        const [result] = await pool.query(
             "INSERT INTO friend_requests (sender_id, receiver_id) VALUES (?, ?)",
             [sender_id, receiver_id]
         );
+
+        // Notify receiver via Socket.io
+        try {
+            const io = getIO();
+            const receiverSocketId = getUserSocket(receiver_id);
+            if (receiverSocketId) {
+                // Fetch sender info for notification
+                const [senderInfo] = await pool.query("SELECT user_id, name, username, profile_image FROM users WHERE user_id = ?", [sender_id]);
+                io.to(receiverSocketId).emit("incoming_friend_request", {
+                    request_id: result.insertId,
+                    sender: senderInfo[0]
+                });
+            }
+        } catch (socketErr) {
+            console.error("Socket notification failed:", socketErr);
+        }
 
         res.status(200).json({ success: true, message: "Friend request sent" });
     } catch (error) {

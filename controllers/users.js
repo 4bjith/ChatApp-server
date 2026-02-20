@@ -177,6 +177,8 @@ export const getAllUsers = async (req, res) => {
 export const searchUserByUsername = async (req, res) => {
   try {
     const { username } = req.query;
+    const current_user_id = req.user?.user_id;
+
     if (!username) return res.status(400).json({ success: false, message: "Username is required" });
 
     const [users] = await pool.query(
@@ -188,7 +190,26 @@ export const searchUserByUsername = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    res.status(200).json({ success: true, user: users[0] });
+    const foundUser = users[0];
+
+    // Check relationship status
+    const [request] = await pool.query(
+      "SELECT * FROM friend_requests WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)",
+      [current_user_id, foundUser.user_id, foundUser.user_id, current_user_id]
+    );
+
+    let relationship = "none";
+    if (request.length > 0) {
+      if (request[0].status === "accepted") {
+        relationship = "friends";
+      } else if (request[0].sender_id === current_user_id) {
+        relationship = "pending_sent";
+      } else {
+        relationship = "pending_received";
+      }
+    }
+
+    res.status(200).json({ success: true, user: { ...foundUser, relationship } });
   } catch (error) {
     console.error("Error in searchUserByUsername:", error);
     res.status(500).json({ success: false, message: "Server error" });
