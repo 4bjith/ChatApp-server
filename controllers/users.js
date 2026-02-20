@@ -20,10 +20,10 @@ export const requestOTP = async (req, res) => {
     ]);
 
     if (users.length > 0) {
-      // Update existing user with new OTP
+      // Update existing user with new OTP and name
       await pool.query(
-        "UPDATE users SET otp = ?, otp_expire_at = ? WHERE email = ?",
-        [otp, otpExpiry, email],
+        "UPDATE users SET otp = ?, otp_expire_at = ?, name = ? WHERE email = ?",
+        [otp, otpExpiry, name || users[0].name, email],
       );
     } else {
       // Create new user with OTP

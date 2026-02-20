@@ -22,14 +22,16 @@ export const sendFriendRequest = async (req, res) => {
             return res.status(400).json({ success: false, message: "You cannot send a request to yourself" });
         }
 
-        // Check if request already exists
+        // Check if relationship already exists
         const [existing] = await pool.query(
-            "SELECT * FROM friend_requests WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)",
+            "SELECT status FROM friend_requests WHERE ((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)) AND status IN ('pending', 'accepted')",
             [sender_id, receiver_id, receiver_id, sender_id]
         );
 
         if (existing.length > 0) {
-            return res.status(400).json({ success: false, message: "Friend request already pending or you are already friends" });
+            const status = existing[0].status;
+            const msg = status === 'accepted' ? "You are already friends" : "Friend request already pending";
+            return res.status(400).json({ success: false, message: msg });
         }
 
         const [result] = await pool.query(
