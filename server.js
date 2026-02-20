@@ -7,12 +7,16 @@ import dotenv from 'dotenv';
 import userRouter from "./routes/users.routes.js";
 import chatRouter from "./routes/messages.routes.js";
 import friendRouter from "./routes/friends.routes.js";
+import { initSocket } from "./socket.js";
 
 dotenv.config();
 
 const app = express();  // createing an express app
 const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
+
+// Initialize Socket.io
+initSocket(server);
 
 
 // ---------cors setups------
