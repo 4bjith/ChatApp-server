@@ -119,7 +119,7 @@ export const getMe = async (req, res) => {
     const user_id = req.user?.user_id; // From auth middleware
 
     const [users] = await pool.query(
-      `SELECT user_id, name, email, profile_image, is_online, last_seen, created_at 
+      `SELECT user_id, name, username, email, profile_image, is_online, last_seen, created_at 
        FROM users WHERE user_id = ?`,
       [user_id]
     );
@@ -128,13 +128,9 @@ export const getMe = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const user = users[0];
     res.status(200).json({
       success: true,
-      user: {
-        ...user,
-        username: user.username || "" // Ensure username is returned
-      },
+      user: users[0],
     });
   } catch (error) {
     console.error("Error in getMe:", error);
@@ -163,7 +159,7 @@ export const logout = async (req, res) => {
 export const getAllUsers = async (req, res) => {
   try {
     const [users] = await pool.query(
-      `SELECT user_id, name, email, profile_image, is_online, last_seen, created_at 
+      `SELECT user_id, name, username, email, profile_image, is_online, last_seen, created_at 
        FROM users`
     );
 
@@ -208,6 +204,7 @@ export const getUserById = async (req, res) => {
       `SELECT 
         user_id,
         name,
+        username,
         email,
         profile_image,
         is_online,
