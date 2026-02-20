@@ -90,35 +90,9 @@ export const getAllReceivedMessagesList = async (req, res) => {
 export const getMessages = async (req, res) => {
   try {
     const sender_id = req.user?.user_id; // From auth middleware
-    const receiver_id = req.body.receiver_id || req.query.receiver_id;
-
+    const { receiver_id } = req.query;
     if (!receiver_id) {
-      // Fetch list of conversations for the Home screen
-      const [conversations] = await pool.query(
-        `SELECT 
-          u.user_id as id,
-          u.name,
-          u.profile_image as image,
-          u.is_online as online,
-          m.message,
-          m.created_at as time,
-          (SELECT COUNT(*) FROM messages m2 WHERE m2.sender_id = u.user_id AND m2.receiver_id = ? AND m2.is_read = 0) as unread
-        FROM messages m
-        JOIN users u ON (m.sender_id = u.user_id AND m.receiver_id = ?) OR (m.sender_id = ? AND m.receiver_id = u.user_id)
-        WHERE m.message_id IN (
-          SELECT MAX(message_id)
-          FROM messages
-          WHERE sender_id = ? OR receiver_id = ?
-          GROUP BY CASE WHEN sender_id = ? THEN receiver_id ELSE sender_id END
-        )
-        ORDER BY m.created_at DESC`,
-        [sender_id, sender_id, sender_id, sender_id, sender_id, sender_id]
-      );
-
-      return res.status(200).json({
-        success: true,
-        messages: conversations,
-      });
+      return res.status(400).json({ success: false, message: "Receiver ID is required" });
     }
 
     const [rows] = await pool.query(

@@ -1,5 +1,5 @@
 import express from "express";
-import { requestOTP, verifyOTP, getMe, logout, getAllUsers, updateUser, deleteUser, getUserById } from "../controllers/users.js";
+import { requestOTP, verifyOTP, getMe, logout, getAllUsers, updateUser, deleteUser, getUserById, searchUserByUsername } from "../controllers/users.js";
 import { verifyToken } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -11,6 +11,7 @@ router.post("/verify-otp", verifyOTP);
 router.post("/logout", verifyToken, logout);
 router.get("/", verifyToken, getAllUsers);
 router.get("/:id", verifyToken, getUserById);
+router.get("/search/find", verifyToken, searchUserByUsername);
 router.put("/", verifyToken, updateUser);
 router.delete("/:id", verifyToken, deleteUser);
 
